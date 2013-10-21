@@ -2130,7 +2130,7 @@ module VM = struct
 					let backend_domid = with_xs (fun xs -> VIF.backend_domid_of xs vif) in
 					let frontend = { domid; kind = Vif; devid = devid } in
 					let backend = { domid = backend_domid; kind = Vif; devid = devid } in
-					let device = { backend = backend; frontend = frontend } in
+					let device = Device_common.({ backend = backend; frontend = frontend }) in
 					with_xs (fun xs -> Hotplug.wait_for_plug task ~xs device);
 
 					(* add disconnect flag *)
