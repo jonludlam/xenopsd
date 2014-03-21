@@ -12,6 +12,7 @@
  * GNU Lesser General Public License for more details.
  *)
 open Xenops_utils
+open Re_fix
 
 module D = Debug.Make(struct let name = "xenopsd" end)
 open D
@@ -84,7 +85,7 @@ let handle_received_fd this_connection =
 				let context = {
 					Xenops_server.transferred_fd = Some received_fd
 				} in
-				let uri = Uri.of_string req.Xenops_migrate.Forwarded_http_request.uri in
+				let uri = exec "handle_received_fd 2" Uri.of_string req.Xenops_migrate.Forwarded_http_request.uri in
 				Xenops_server.VM.receive_memory uri req.Xenops_migrate.Forwarded_http_request.cookie this_connection context
 			end
 		) (fun () -> Unix.close received_fd)

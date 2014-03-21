@@ -2273,7 +2273,7 @@ module Actions = struct
 			RRDD.Plugin.Interdomain.deregister ~uid
 		in
 
-		match List.filter (fun x -> x <> "") (Re_str.split (Re_str.regexp_string "/") path) with
+		match List.filter (fun x -> x <> "") (Stringext.String.split '/' path) with
 			| "local" :: "domain" :: domid :: "backend" :: kind :: frontend :: devid :: _ ->
 				debug "Watch on backend domid: %s kind: %s -> frontend domid: %s devid: %s" domid kind frontend devid;
 				fire_event_on_device frontend kind devid
@@ -2289,7 +2289,7 @@ module Actions = struct
 						Printf.sprintf "/local/domain/%s/rrd/%s/protocol" domid name
 					in
 					let grant_refs = xs.Xs.read grant_refs_path
-						|> Re_str.split (Re_str.regexp_string ",")
+						|> Stringext.String.split ','
 						|> List.map int_of_string
 					in
 					let protocol = Rpc.String (xs.Xs.read protocol_path)

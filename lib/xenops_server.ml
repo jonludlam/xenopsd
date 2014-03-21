@@ -16,6 +16,7 @@ open Xenops_interface
 open Xenops_server_plugin
 open Xenops_utils
 open Xenops_task
+open Re_fix
 
 module D = Debug.Make(struct let name = "xenops_server" end)
 open D
@@ -1236,7 +1237,7 @@ and perform ?subtask (op: operation) (t: Xenops_task.t) : unit =
 			debug "VM.migrate %s -> %s" id url';
 			let vm = VM_DB.read_exn id in
 			let open Xenops_client in
-			let url = Uri.of_string url' in
+			let url = exec "VM_migrate 1" Uri.of_string url' in
 			(* We need to perform version exchange here *)
 			let is_localhost =
 				try
@@ -1253,8 +1254,8 @@ and perform ?subtask (op: operation) (t: Xenops_task.t) : unit =
 			let module Remote = Xenops_interface.Client(struct let rpc = Xcp_client.xml_http_rpc ~srcstr:"xenops" ~dststr:"dst_xenops" (fun () -> url') end) in
 			let id = Remote.VM.import_metadata t.Xenops_task.dbg(export_metadata vdi_map vif_map id) in
 			debug "Received id = %s" id;
-			let memory_url = Uri.make ?scheme:(Uri.scheme url) ?host:(Uri.host url) ?port:(Uri.port url)
-				~path:(Uri.path url ^ "/memory/" ^ id) ~query:(Uri.query url) () in
+			let memory_url = exec "VM_migrate 2" (fun () -> Uri.make ?scheme:(Uri.scheme url) ?host:(Uri.host url) ?port:(Uri.port url)
+				~path:(Uri.path url ^ "/memory/" ^ id) ~query:(Uri.query url) ()) () in
 
 			(* CA-78365: set the memory dynamic range to a single value to stop ballooning. *)
 			let atomic = VM_set_memory_dynamic_range(id, vm.Vm.memory_dynamic_min, vm.Vm.memory_dynamic_min) in
@@ -1738,8 +1739,6 @@ module VM = struct
 		end else
 			Some (queue_operation dbg id op)
 
-	let path_separator = Re_str.regexp_string "/"
-
 	let receive_memory uri cookies s context : unit =
 		let module Request = Cohttp.Request.Make(Cohttp_posix_io.Unbuffered_IO) in
 		let module Response = Cohttp.Response.Make(Cohttp_posix_io.Unbuffered_IO) in
@@ -1752,7 +1751,7 @@ module VM = struct
 				let remote_instance = List.assoc "instance_id" cookies in
 				let is_localhost = instance_id = remote_instance in
 				(* The URI is /service/xenops/memory/id *)
-				let bits = Re_str.split_delim path_separator (Uri.path uri) in
+				let bits = Stringext.String.split '/' (Uri.path uri) in
 				let id = bits |> List.rev |> List.hd in
 				debug "VM.receive_memory id = %s is_localhost = %b" id is_localhost;
 				is_localhost, id
@@ -1773,8 +1772,9 @@ module VM = struct
 				let headers = Cohttp.Header.of_list [
 					"User-agent", "xenopsd"
 				] in
-				let response = Cohttp.Response.make ~version:`HTTP_1_1 ~status:`Not_found ~headers () in
-				Response.write (fun _ _ -> ()) response s;
+				let response = Cohttp.Response.make ~version:`HTTP_1_1 
+				  ~status:`Not_found ~headers () in
+				Response.write (fun _ _ -> ()) response s
 		) ()
 
 	let generate_state_string _ dbg vm =
