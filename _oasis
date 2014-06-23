@@ -88,3 +88,11 @@ Executable xenopsd_xenlight_main
   BuildDepends:       xenlight, xenlight.xentoollog, xenctrl, xenopsd, xenstore, xenstore.unix, xenstore_transport, xenstore_transport.unix, rpclib, forkexec, xcp, xcp.storage, xcp.memory, sexplib, xcp-inventory
   CSources:           fsync_stubs.c, poll_stubs.c
 
+Executable test
+  CompiledObject:     best
+  Path:               test
+  MainIs:             test.ml
+  Build:              true
+  Custom:             true
+  Install:            false
+  BuildDepends:       xenopsd, oUnit, xcp, threads

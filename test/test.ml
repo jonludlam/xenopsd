@@ -41,7 +41,7 @@ let expect_exception pred f =
 	if pred exn then () else raise exn
 
 let fail_running f =
-	expect_exception (function Bad_power_state(Running _, Halted) -> true | _ -> false) f
+	expect_exception (function Bad_power_state(Running, Halted) -> true | _ -> false) f
 
 let fail_not_built f = 
 	expect_exception (function Domain_not_built -> true | _ -> false) f
@@ -53,7 +53,7 @@ let event_wait p =
 	let finished = ref false in
 	let event_id = ref None in
 	while not !finished do
-		let deltas, next_id = Client.UPDATES.get dbg !event_id (Some 30) in
+		let _, deltas, next_id = Client.UPDATES.get dbg !event_id (Some 30) in
 		event_id := Some next_id;
 		List.iter (fun d -> if p d then finished := true) deltas;
 	done
@@ -76,7 +76,7 @@ let wait_for_tasks id =
 	let ids = ref (List.fold_left (fun set x -> StringSet.add x set) StringSet.empty id) in
 	let event_id = ref None in
 	while not(StringSet.is_empty !ids) do
-		let deltas, next_id = Client.UPDATES.get dbg !event_id (Some 30) in
+		let _, deltas, next_id = Client.UPDATES.get dbg !event_id (Some 30) in
 		if !verbose_timings
 		then (Printf.fprintf stderr "next_id = %d; deltas = %d" next_id (List.length deltas); flush stderr);
 		if List.length deltas = 0 then failwith (Printf.sprintf "no deltas, next_id = %d" next_id);
@@ -697,13 +697,33 @@ let ionice_output _ =
 			) x' y
 		) equals
 
+let test_64_bit_marshall x () =
+        List.iter (fun endianness ->
+          let s = Io.marshall_int64 ~endianness x in
+          let x' = Io.unmarshall_int64 ~endianness s in
+                assert_equal ~msg:"Marshalling and unmarshalling changed value" x x'
+        ) [`big; `little]
+
+let test_random_marshall n () =
+        for i = 1 to n do
+          let x = Random.int64 Int64.max_int in
+                test_64_bit_marshall x ()
+        done
+
+let test =
+        "test_io" >:::
+                [
+
+                ]
 
 let _ =
 	let verbose = ref false in
 
 	Arg.parse [
 		"-verbose", Arg.Unit (fun _ -> verbose := true), "Run in verbose mode";
-		"-path", Arg.String Xenops_client.set_sockets_dir, "Set the directory containing the unix domain sockets";
+		"-path", Arg.String Xenops_interface.set_sockets_dir, "Set the directory containing the unix domain sockets";
+		"-use-switch", Arg.Bool (fun b -> Xcp_client.use_switch := b), "Use the message switch (default=true)";
+		"-queue", Arg.Set_string Xenops_interface.queue_name, "Set the queue name to use (default="^(!Xenops_interface.queue_name)^")";
 	] (fun x -> Printf.fprintf stderr "Ignoring argument: %s\n" x)
 		"Test xenopd service";
 
@@ -740,6 +760,10 @@ let _ =
 			"vm_test_resume" >:: vm_test_resume;
 			"ionice_qos_scheduler" >:: ionice_qos_scheduler;
 			"ionice_output" >:: ionice_output;
+                        "Max int marshall/unmarshall" >:: test_64_bit_marshall (Int64.max_int);
+                        "Min int marshall/unmarshall" >:: test_64_bit_marshall (Int64.min_int);
+                        "Zero int marshall/unmarshall" >:: test_64_bit_marshall 0L;
+                        "100x random int marshall/unmarshall" >:: test_random_marshall 100;
 		] in
 
 (*	if !verbose then Debug.log_to_stdout (); *)
