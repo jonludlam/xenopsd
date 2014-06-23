@@ -53,6 +53,7 @@ module type INTERFACE = sig
 	module Exception : sig
 		type exnty
 		val rpc_of_exnty : exnty -> Rpc.t
+		val exnty_of_rpc : Rpc.t -> exnty
 	end
 
 	val exnty_of_exn : exn -> Exception.exnty
