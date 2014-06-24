@@ -9,3 +9,4 @@ xenopsd manages VMs running
 
 and provides a simple RPC control interface to the layer above (typically xapi).
 
+Temp addition.
