@@ -971,7 +971,7 @@ let suspend (task: Xenops_task.t) ~xc ~xs ~hvm xenguest_path domid fd flags ?(pr
 		let size = (Unix.stat file).Unix.st_size in
 
 		finally (fun () ->
-			Io.write_int fd size;
+			Io.write_int ~endianness:`big fd size;
 			let limit = Int64.of_int size in
 			debug "VM = %s; domid = %d; writing %Ld bytes from %s" (Uuid.to_string uuid) domid limit file;
 			if Unixext.copy_file ~limit fd2 fd <> limit
