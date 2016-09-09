@@ -20,5 +20,5 @@ let qemu_vif_script = ref "/usr/lib/xcp/scripts/qemu-vif-script"
 open Unix
 
 let essentials = [
-        X_OK, "qemu-vif-script", qemu_vif_script, "path to the qemu vif script";
+  X_OK, "qemu-vif-script", qemu_vif_script, "path to the qemu vif script";
 ]

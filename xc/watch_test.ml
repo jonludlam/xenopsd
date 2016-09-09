@@ -18,8 +18,8 @@ open Xenstore
 module Tests = struct
   let title ?timeout name =
     Printf.(printf "Waiting%sfor %s: "
-      (match timeout with Some t -> sprintf " (timeout %.1f sec) " t | _ -> " ")
-      name);
+              (match timeout with Some t -> sprintf " (timeout %.1f sec) " t | _ -> " ")
+              name);
     flush stdout
 
   let all ?timeout xs =
@@ -33,7 +33,7 @@ module Tests = struct
     begin 
       match wait_for ~xs ?timeout (all_of [ value_to_appear "/test/one"; value_to_appear "/test/two" ]) with
       | [ a; b ] ->
-	  Printf.printf "values %s and %s\n" a b
+        Printf.printf "values %s and %s\n" a b
       | _ -> failwith "arity mismatch"
     end;
     title ?timeout "either of /test/one or /test/two to disappear";

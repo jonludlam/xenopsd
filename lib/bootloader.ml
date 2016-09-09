@@ -85,55 +85,55 @@ let command bootloader q pv_bootloader_args image vm_uuid =
 (* linux (kernel /var/lib/xen/vmlinuz.y1Wmrp)(args 'root=/dev/sda1 ro') *)
 (* linux (kernel /var/lib/xen/vmlinuz.SFO5fb)(ramdisk /var/lib/xen/initrd.MUitgP)(args 'root=/dev/sda1 ro') *)
 let kvpairs_of_string x = Sexplib.Sexp.(match scan_sexps (Lexing.from_string x) with
-  | Atom "linux" :: list ->
-    let rec to_list = function
-    | List (Atom key :: values) :: rest ->
-      let atoms = List.map (function Atom x -> x | _ -> raise (Bad_sexpr x)) values in
-      let v = String.concat " " atoms in
-      let v =
-        if v.[0] = '\'' && v.[String.length v - 1] = '\''
-        then String.sub v 1 (String.length v - 2)
-        else v in
-      (key, v) :: (to_list rest)
-    | [] -> []
-    | _ -> raise (Bad_sexpr x) in
-		to_list list
-	| _ -> raise (Bad_sexpr x)
-)
+    | Atom "linux" :: list ->
+      let rec to_list = function
+        | List (Atom key :: values) :: rest ->
+          let atoms = List.map (function Atom x -> x | _ -> raise (Bad_sexpr x)) values in
+          let v = String.concat " " atoms in
+          let v =
+            if v.[0] = '\'' && v.[String.length v - 1] = '\''
+            then String.sub v 1 (String.length v - 2)
+            else v in
+          (key, v) :: (to_list rest)
+        | [] -> []
+        | _ -> raise (Bad_sexpr x) in
+      to_list list
+    | _ -> raise (Bad_sexpr x)
+  )
 
 let parse_output x =
   let l = kvpairs_of_string x in
-	{
-		kernel_path = List.assoc "kernel" l;
-		initrd_path = (try Some (List.assoc "ramdisk" l) with _ -> None);
-		kernel_args = (try List.assoc "args" l with _ -> "")
-	}
+  {
+    kernel_path = List.assoc "kernel" l;
+    initrd_path = (try Some (List.assoc "ramdisk" l) with _ -> None);
+    kernel_args = (try List.assoc "args" l with _ -> "")
+  }
 
 let runtimeError = "RuntimeError: "
 
 let parse_exception x =
-	debug "Bootloader failed: %s" x;
-	(* Look through the error for the prefix "RuntimeError: " - raise an exception with a message
-	 * containing the error from the end of this prefix onwards. *)
-	let l = String.length runtimeError in
-	match Stdext.Xstringext.String.find_all runtimeError x with
-	| i::_ ->
-		raise (Error_from_bootloader (String.sub x (i+l) (String.length x - i - l)))
-	| _ -> (* no expected prefix *)
-		raise (Bad_error x)
+  debug "Bootloader failed: %s" x;
+  (* Look through the error for the prefix "RuntimeError: " - raise an exception with a message
+     	 * containing the error from the end of this prefix onwards. *)
+  let l = String.length runtimeError in
+  match Stdext.Xstringext.String.find_all runtimeError x with
+  | i::_ ->
+    raise (Error_from_bootloader (String.sub x (i+l) (String.length x - i - l)))
+  | _ -> (* no expected prefix *)
+    raise (Bad_error x)
 
 (** Extract the default kernel using the -q option *)
 let extract (task: Xenops_task.t) ~bootloader ~disk ?(legacy_args="") ?(extra_args="") ?(pv_bootloader_args="") ~vm:vm_uuid () =
-	(* Without this path, pygrub will fail: *)
-	Unixext.mkdir_rec "/var/run/xend/boot" 0o0755;
-	let bootloader_path, cmdline = command bootloader true pv_bootloader_args disk vm_uuid in
-	debug "Bootloader commandline: %s %s\n" bootloader_path (String.concat " " cmdline);
-	try
-		let output, _ = Cancellable_subprocess.run task [] bootloader_path cmdline in
-		let result = parse_output output in
-		{ result with kernel_args = Printf.sprintf "%s %s %s" result.kernel_args legacy_args extra_args }
-	with Forkhelpers.Spawn_internal_error(stderr, stdout, _) ->
-		parse_exception stderr
+  (* Without this path, pygrub will fail: *)
+  Unixext.mkdir_rec "/var/run/xend/boot" 0o0755;
+  let bootloader_path, cmdline = command bootloader true pv_bootloader_args disk vm_uuid in
+  debug "Bootloader commandline: %s %s\n" bootloader_path (String.concat " " cmdline);
+  try
+    let output, _ = Cancellable_subprocess.run task [] bootloader_path cmdline in
+    let result = parse_output output in
+    { result with kernel_args = Printf.sprintf "%s %s %s" result.kernel_args legacy_args extra_args }
+  with Forkhelpers.Spawn_internal_error(stderr, stdout, _) ->
+    parse_exception stderr
 
 let delete x =
   Unix.unlink x.kernel_path;

@@ -13,18 +13,18 @@
  *)
 
 let specific_options = [
-	"sockets-group", Arg.Set_string Qemu_path.sockets_group, (fun () -> !Qemu_path.sockets_group), "Group to allow access to the control sockets";
+  "sockets-group", Arg.Set_string Qemu_path.sockets_group, (fun () -> !Qemu_path.sockets_group), "Group to allow access to the control sockets";
 ]
 
 let specific_essential_paths = Qemu_path.essentials
 
 (* Start the program with the qemu backend *)
 let _ =
-	Xenops_interface.queue_name := !Xenops_interface.queue_name ^ ".qemu";
-	Xenops_utils.set_root "xenopsd/qemu";
-	Xenopsd.configure
-	~specific_options
-	~specific_essential_paths
-	();
-	Xenopsd.main
-	(module Xenops_server_qemu: Xenops_server_plugin.S)
+  Xenops_interface.queue_name := !Xenops_interface.queue_name ^ ".qemu";
+  Xenops_utils.set_root "xenopsd/qemu";
+  Xenopsd.configure
+    ~specific_options
+    ~specific_essential_paths
+    ();
+  Xenopsd.main
+    (module Xenops_server_qemu: Xenops_server_plugin.S)

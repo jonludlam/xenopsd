@@ -33,7 +33,7 @@ module Tests = struct
     begin 
       match wait_for ~xs (all_of [ value_to_appear "/test/one"; value_to_appear "/test/two" ]) with
       | [ a; b ] ->
-	  Printf.printf "values %s and %s\n" a b
+        Printf.printf "values %s and %s\n" a b
       | _ -> failwith "arity mismatch"
     end;
     title "either of /test/one or /test/two to disappear";

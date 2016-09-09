@@ -32,15 +32,15 @@ let has_fired ~xs (x: 'a t) =
     true
   with Xs_protocol.Eagain ->
     false
-    
+
 let map f x = { evaluate = fun xs -> f (x.evaluate xs) }
-  
+
 (** Block waiting for a result *)
 let wait_for ~xs ?(timeout=300.) (x: 'a t) =
   let task = Xs.wait x.evaluate in
   let cancel = Scheduler.(one_shot (Delta (int_of_float timeout)) "cancel watch" (fun () -> Xs_client_unix.Task.cancel task)) in
   try
-	let result = Xs_client_unix.Task.wait task in
+    let result = Xs_client_unix.Task.wait task in
     Scheduler.cancel cancel;
     result
   with Xs_client_unix.Cancelled ->
@@ -50,35 +50,35 @@ let wait_for ~xs ?(timeout=300.) (x: 'a t) =
 (** Wait for a node to appear in the store and return its value *)
 let value_to_appear (path: path): string t = 
   { evaluate = fun xs -> 
-      try 
-        let v = xs.Xs.read path in
-        v
-      with Xs_protocol.Enoent _ -> raise Xs_protocol.Eagain
+        try 
+          let v = xs.Xs.read path in
+          v
+        with Xs_protocol.Enoent _ -> raise Xs_protocol.Eagain
   }
 
 (** Wait for a node to disappear from the store *)
 let key_to_disappear (path: path) : unit t = 
   { evaluate = fun xs -> 
-      try
-	    ignore(xs.Xs.read path); raise Xs_protocol.Eagain 
-      with Xs_protocol.Enoent _ ->
-        () 
+        try
+          ignore(xs.Xs.read path); raise Xs_protocol.Eagain 
+        with Xs_protocol.Enoent _ ->
+          () 
   }
 
 (** Wait for a node to appear with a particular value *)
 let value_to_become (path: path) (v: string) : unit t = 
   { evaluate = fun xs -> 
-      try 
-        if xs.Xs.read path <> v
-	    then raise Xs_protocol.Eagain
-      with Xs_protocol.Enoent _ -> raise Xs_protocol.Eagain
+        try 
+          if xs.Xs.read path <> v
+          then raise Xs_protocol.Eagain
+        with Xs_protocol.Enoent _ -> raise Xs_protocol.Eagain
   }
 
 (** Wait for a set of conditions simultaneously. Note when any watch fires we
     re-evaluate everything which isn't necessarily the most efficient thing to do. *)
 let all_of (watches: 'a t list) = 
   { evaluate = fun xs ->
-      List.map (fun x -> x.evaluate xs) watches
+        List.map (fun x -> x.evaluate xs) watches
   }
 
 (** Wait for any of a set of tagged conditions to become true. Return the tag of 
