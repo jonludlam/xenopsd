@@ -2370,13 +2370,18 @@ module VM = struct
     let memory_limit = List.assoc "memory_limit" cookies |> Int64.of_string in
     Debug.with_thread_associated dbg
       (fun () ->
-         let id, final_id = Debug.with_thread_associated dbg
-             debug "VM.receive_memory";
-           let final_id = List.assoc "final_id" cookies in
+         let id, final_id =
+           Debug.with_thread_associated dbg
+           debug "VM.receive_memory";
            (* The URI is /service/xenops/memory/id *)
            let bits = Stdext.Xstringext.String.split '/' (Uri.path uri) in
            let id = bits |> List.rev |> List.hd in
-           debug "VM.receive_memory id = %s" id;
+           let final_id =
+             try
+               List.assoc "final_id" cookies
+             with _ -> id
+           in
+           debug "VM.receive_memory id = %s, final_id=%s" id final_id;
            id, final_id
          in
          match context.transferred_fd with
