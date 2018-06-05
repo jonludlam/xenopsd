@@ -8,7 +8,6 @@
     xenstore
     xenstore.unix
     xenstore_transport
-    xenstore_transport.unix
     threads
     stdext
     xcp.xen
