@@ -247,6 +247,7 @@ let make ~xc ~xs vm_info vcpus domain_config uuid =
     let rwperm = Xenbus_utils.rwperm_for_guest domid in
     let zeroperm = Xenbus_utils.rwperm_for_guest 0 in
     debug "VM = %s; creating xenstored tree: %s" (Uuid.to_string uuid) dom_path;
+    let starttime = Unix.gettimeofday () in
 
     let create_time = Mtime.to_uint64_ns (Mtime_clock.now ()) in
     Xs.transaction xs (fun t ->
@@ -316,24 +317,28 @@ let make ~xc ~xs vm_info vcpus domain_config uuid =
         mksubdirs xenops_dom_path device_dirs zeroperm;
       );
 
-    xs.Xs.writev dom_path (filtered_xsdata vm_info.xsdata);
-    xs.Xs.writev (dom_path ^ "/platform") vm_info.platformdata;
+    Xs.transaction xs (fun t ->
 
-    xs.Xs.writev (dom_path ^ "/bios-strings") vm_info.bios_strings;
+      t.Xs.writev dom_path (filtered_xsdata vm_info.xsdata);
+      t.Xs.writev (dom_path ^ "/platform") vm_info.platformdata;
+
+      t.Xs.writev (dom_path ^ "/bios-strings") vm_info.bios_strings;
 
     (* If a toolstack sees a domain which it should own in this state then the
        		   domain is not completely setup and should be shutdown. *)
-    xs.Xs.write (dom_path ^ "/action-request") "poweroff";
+      t.Xs.write (dom_path ^ "/action-request") "poweroff";
 
-    xs.Xs.write (dom_path ^ "/control/platform-feature-multiprocessor-suspend") "1";
+      t.Xs.write (dom_path ^ "/control/platform-feature-multiprocessor-suspend") "1";
 
-    xs.Xs.write (dom_path ^ "/control/has-vendor-device") (if vm_info.has_vendor_device then "1" else "0");
+      t.Xs.write (dom_path ^ "/control/has-vendor-device") (if vm_info.has_vendor_device then "1" else "0");
 
     (* CA-30811: let the linux guest agent easily determine if this is a fresh domain even if
        		   the domid hasn't changed (consider cross-host migrate) *)
-    xs.Xs.write (dom_path ^ "/unique-domain-id") (Uuid.to_string (Uuid.create `V4));
+      t.Xs.write (dom_path ^ "/unique-domain-id") (Uuid.to_string (Uuid.create `V4)));
 
-    info "VM = %s; domid = %d" (Uuid.to_string uuid) domid;
+    let endtime = Unix.gettimeofday () in
+    info "VM = %s; domid = %d (elapsed: %f)" (Uuid.to_string uuid) domid (endtime -. starttime);
+
     domid
   with e ->
     debug "VM = %s; domid = %d; Caught exception while creating xenstore tree: %s" (Uuid.to_string uuid) domid (Printexc.to_string e);
