@@ -57,7 +57,6 @@ let () = Printf.ksprintf Jbuild_plugin.V1.send {|
     ppx_sexp_conv.runtime-lib
     re
     re.pcre
-    xeneventchn
   ))
 ))
 
