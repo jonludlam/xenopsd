@@ -3565,17 +3565,6 @@ let init () =
   Device.Backend.init();
   debug "xenstore is responding to requests";
   let () = Watcher.create_watcher_thread () in
-  let (_: Thread.t) = Thread.create (fun () ->
-      debug "starting xen event watch thread.";
-      while true do
-        try
-          watch_xen_event ()
-        with e ->
-          debug "watch_xen_event thread raised: %s" (Printexc.to_string e);
-          debug "watch_xen_event thread backtrace: %s" (Printexc.get_backtrace ());
-          Thread.delay 5.;
-      done) ()
-  in
   ()
 
 module DEBUG = struct
