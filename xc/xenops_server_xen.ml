@@ -3508,7 +3508,8 @@ let look_for_xenctrl () =
       exit 1;
     end
 
-let watch_xen_event () =
+let watch_xen_event () = while true do Thread.delay 10000.0 done
+(*
   let open Xeneventchn in
   let handle = init () in
   let virq_enomem_port = bind_virq handle Enomem in
@@ -3527,6 +3528,7 @@ let watch_xen_event () =
     process_event ()
   in
   process_event ()
+*)
 
 let init () =
   look_for_forkexec ();

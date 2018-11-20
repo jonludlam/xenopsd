@@ -29,7 +29,6 @@
     ppx_sexp_conv.runtime-lib
     re
     re.pcre
-    xeneventchn
   ))
   (preprocess (pps (ppx_deriving_rpc ppx_sexp_conv bisect_ppx -conditional)))
 ))
